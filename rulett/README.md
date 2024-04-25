@@ -1,0 +1,1 @@
+Egyszerű roulett simulator
