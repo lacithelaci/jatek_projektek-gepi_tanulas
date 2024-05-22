@@ -1,1 +1,1 @@
-Tetris játék
+Tetris játék objektumorientáltsággal
