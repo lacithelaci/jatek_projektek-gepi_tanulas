@@ -46,6 +46,7 @@ def lvl1() -> None:
                JumpingEnemy(570, 250, 15, 15), JumpingEnemy(250, 300, 15, 15)
                ]
 
+    # bombák példányosítása és tárolása
     bombs = [Bombs(600, 130, 30, 30), Bombs(400, 130, 30, 30), Bombs(200, 130, 30, 30),
              Bombs(500, 130, 30, 30), Bombs(300, 130, 30, 30),
              ]
@@ -118,6 +119,7 @@ def lvl1() -> None:
             successful = True
             run = False
 
+        # elveszített összes HP
         if lives < 0:
             run = False
 
@@ -127,6 +129,7 @@ def lvl1() -> None:
         # cél kirajzolása
         pygame.draw.rect(screen, green, goal)
 
+        # HP megjelenítése
         hp(screen, lives)
 
         # Képernyő frissítése
@@ -136,7 +139,6 @@ def lvl1() -> None:
         clock.tick(60)
 
     # győzelem vagy vereség felirat
-
     if successful:
         win_or_lose(screen_width, screen_height, screen, white, "You Win")
         pygame.display.flip()
