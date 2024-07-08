@@ -1,4 +1,5 @@
 import pygame
+import math
 
 # hang
 pygame.mixer.init()
@@ -17,11 +18,11 @@ def win_or_lose(screen_width, screen_height, screen, szin, uzenet):
     pygame.time.wait(3000)
 
 
-def hp(screen, lives):
+def hp(screen, lives, hp_poz=(50, 65)):
     font = pygame.font.Font(None, 20)
     text = font.render(f"{lives}", True, (0, 0, 0))
     text_rect = text.get_rect()
-    text_rect.center = (50, 65)
+    text_rect.center = hp_poz
     screen.blit(text, text_rect)
 
 
@@ -131,3 +132,83 @@ class Bombs:
         self.rect.topleft = (self.x, self.y)
         # Kép kirajzolása a megadott pozícióra
         screen.blit(self.image, self.rect)
+
+
+class FireBall:
+
+    def __init__(self, width, height, orbit_center, orbit_radius, orbit_speed, initial_angle):
+        self.width = width
+        self.height = height
+        self.orbit_center = orbit_center
+        self.orbit_radius = orbit_radius
+        self.orbit_speed = orbit_speed
+        self.angle = initial_angle  # Kezdeti szög beállítása
+
+        # Kép betöltése és méretezése
+        self.image = pygame.image.load('kepek/fire.png')
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+    def draw(self, surface):
+        # Középpont koordinátái
+        cx, cy = self.orbit_center
+
+        # Kép középpontjának számítása a körpályán
+        image_center_x = cx + self.orbit_radius * math.cos(self.angle)
+        image_center_y = cy + self.orbit_radius * math.sin(self.angle)
+
+        # Kép bal felső sarkának számítása
+        image_top_left_x = image_center_x - self.width // 2
+        image_top_left_y = image_center_y - self.height // 2
+
+        # Téglalap definiálása a kép köré
+        self.rect = pygame.Rect(image_top_left_x, image_top_left_y, self.width, self.height)
+
+        # Kép kirajzolása
+        surface.blit(self.image, self.rect.topleft)
+
+    def update(self):
+        # Szög frissítése a forgatáshoz
+        self.angle += self.orbit_speed
+        if self.angle >= 2 * math.pi:
+            self.angle -= 2 * math.pi
+
+    def collides_with(self, other_rect):
+        # Ütközés vizsgálata egy másik téglalappal
+        return self.rect.colliderect(other_rect)
+
+
+import pygame
+
+
+class Spike(pygame.sprite.Sprite):
+    def __init__(self, x, y, height, width, left_max, right_max, speed):
+        super().__init__()
+        # Kép betöltése és méretezése
+        self.image = pygame.image.load('kepek/spike.png')
+        self.image = pygame.transform.scale(self.image, (width, height))
+        self.image = pygame.transform.flip(self.image, True, False)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.direction = 1  # 1: jobbra, -1: balra
+        self.start_x = x
+        self.move_counter = 0
+        self.left_max = left_max
+        self.right_max = right_max
+        self.speed = speed
+
+    def update(self):
+        # Mozgás balra vagy jobbra
+        self.rect.x += self.direction * self.speed
+
+        # Ellenőrzés, hogy elérte-e a megadott x koordinátákat
+        if self.rect.left < self.left_max:
+            self.rect.left = self.left_max
+            self.direction = 1
+        elif self.rect.right > self.right_max:
+            self.rect.right = self.right_max
+            self.direction = -1
+
+    def draw(self, surface):
+        # Kép kirajzolása a megadott felületre
+        surface.blit(self.image, self.rect)
