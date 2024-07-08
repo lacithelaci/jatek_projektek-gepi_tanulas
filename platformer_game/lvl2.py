@@ -79,7 +79,7 @@ def lvl2() -> None:
     font = pygame.font.Font(None, 36)
 
     # sikeresen befejeződött-e a játék?
-    successfull = False
+    succesfull = False
 
     # Játék ciklus
     clock = pygame.time.Clock()
@@ -154,7 +154,11 @@ def lvl2() -> None:
 
         # cél elérése és ahhoz kapcsolódó események
         if player.rect.colliderect(flag_rect):
-            successfull = True
+            succesfull = True
+            run = False
+
+        # elveszített összes HP
+        if lives < 0:
             run = False
 
         # teleportálások
@@ -186,11 +190,10 @@ def lvl2() -> None:
         # FPS beállítása
         clock.tick(60)
 
-    if successfull:
+    if succesfull:
         win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "You Win")
     else:
         win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "You Lose")
-
     # Pygame bezárása
     pygame.quit()
     sys.exit()
