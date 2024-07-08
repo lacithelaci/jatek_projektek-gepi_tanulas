@@ -79,7 +79,7 @@ def lvl2() -> None:
     font = pygame.font.Font(None, 36)
 
     # sikeresen befejeződött-e a játék?
-    succesfull = False
+    successfull = False
 
     # Játék ciklus
     clock = pygame.time.Clock()
@@ -186,7 +186,7 @@ def lvl2() -> None:
         # FPS beállítása
         clock.tick(60)
 
-    if succesfull:
+    if successfull:
         win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "You Win")
     else:
         win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "You Lose")
