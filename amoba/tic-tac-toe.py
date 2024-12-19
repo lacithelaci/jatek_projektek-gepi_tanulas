@@ -41,7 +41,7 @@ def jatek() -> None:
         try:
 
             # bekérjük a játékos pozícióját
-            bekert_adat = list(map(int, input().split('Add meg a pozíciót, ahova pakolni szeretnél')))
+            bekert_adat: list[int] = list(map(int, input().split('Add meg a pozíciót, ahova pakolni szeretnél')))
 
             # megvizsgáljuk lehet-e oda tenni alakzatot
             if felulir(tabla, bekert_adat[1] - 1, bekert_adat[0] - 1):
