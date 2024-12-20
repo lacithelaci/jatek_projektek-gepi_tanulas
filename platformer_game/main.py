@@ -8,23 +8,23 @@ def menu() -> None:
     pygame.init()
 
     # Színek
-    red = (255, 0, 0)
-    green = (0, 255, 0)
+    red: tuple[int, int, int] = (255, 0, 0)
+    green: tuple[int, int, int] = (0, 255, 0)
 
     # Ablak létrehozása
-    screen = pygame.display.set_mode((800, 600))
+    screen: pygame.Surface = pygame.display.set_mode((800, 600))
     pygame.display.set_caption('Menu')
 
     # Háttérkép betöltése
-    background = pygame.image.load('kepek/menu.jpeg').convert()
+    background: pygame.Surface = pygame.image.load('kepek/menu.jpeg').convert()
     background = pygame.transform.scale(background, (850, 600))
 
     # gombok
-    play = pygame.Rect(148, 496, 250, 80)
-    kilep = pygame.Rect(420, 495, 250, 80)
+    play: pygame.Rect = pygame.Rect(148, 496, 250, 80)
+    kilep: pygame.Rect = pygame.Rect(420, 495, 250, 80)
 
     # Fő ciklus
-    running = True
+    running: bool = True
     while running:
 
         # Események kezelése
@@ -37,7 +37,7 @@ def menu() -> None:
                     running = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
+                mouse_pos: tuple[int, int] = pygame.mouse.get_pos()
 
                 if play.collidepoint(mouse_pos):
                     lvl1()
