@@ -1,23 +1,25 @@
 import sys
 import pygame
 import random
+from typing import List, Tuple, Union
 
 pygame.init()
 
 # Ablakok
-WIDTH, HEIGHT = 800, 600
-GRID_SIZE = 25
+WIDTH: int = 800
+HEIGHT: int = 600
+GRID_SIZE: int = 25
 
 # Színek
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
-COLORS = [RED, BLUE, GREEN]
+WHITE: Tuple[int, int, int] = (255, 255, 255)
+BLACK: Tuple[int, int, int] = (0, 0, 0)
+RED: Tuple[int, int, int] = (255, 0, 0)
+BLUE: Tuple[int, int, int] = (0, 0, 255)
+GREEN: Tuple[int, int, int] = (0, 255, 0)
+COLORS: List[Tuple[int, int, int]] = [RED, BLUE, GREEN]
 
 # Tetris alakzatok
-SHAPES = [
+SHAPES: List[List[List[str]]] = [
     [
         ['.....',
          '.....',
@@ -101,30 +103,30 @@ SHAPES = [
 
 
 class Tetromino:
-    def __init__(self, x, y, shape):
-        self.x = x
-        self.y = y
-        self.shape = shape
-        self.color = random.choice(COLORS)  # különböző színű alakzatok
-        self.rotation = 0
+    def __init__(self, x: int, y: int, shape: List[List[str]]) -> None:
+        self.x: int = x
+        self.y: int = y
+        self.shape: List[List[str]] = shape
+        self.color: Tuple[int, int, int] = random.choice(COLORS)  # különböző színű alakzatok
+        self.rotation: int = 0
 
 
 class Tetris:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.grid = [[0 for _ in range(width)] for _ in range(height)]
-        self.current_piece = self.new_piece()
-        self.game_over = False
-        self.score = 0  # Pontok Lacikám, pontok
+    def __init__(self, width: int, height: int) -> None:
+        self.width: int = width
+        self.height: int = height
+        self.grid: List[List[Union[int, Tuple[int, int, int]]]] = [[0 for _ in range(width)] for _ in range(height)]
+        self.current_piece: Tetromino = self.new_piece()
+        self.game_over: bool = False
+        self.score: int = 0  # Pontok Lacikám, pontok
 
-    def new_piece(self):
+    def new_piece(self) -> Tetromino:
         # Random alakzat
-        shape = random.choice(SHAPES)
+        shape: List[List[str]] = random.choice(SHAPES)
         # Alakzat létrehozása objektumként
         return Tetromino(self.width // 2, 0, shape)
 
-    def valid_move(self, piece, x, y, rotation):
+    def valid_move(self, piece: Tetromino, x: int, y: int, rotation: int) -> bool:
         # legális-e az adott lépés
         for i, row in enumerate(piece.shape[(piece.rotation + rotation) % len(piece.shape)]):
             for j, cell in enumerate(row):
@@ -135,9 +137,9 @@ class Tetris:
                     return False
         return True
 
-    def clear_lines(self):
+    def clear_lines(self) -> int:
         # képernyőtörlés
-        lines_cleared = 0
+        lines_cleared: int = 0
         for i, row in enumerate(self.grid[:-1]):
             if all(cell != 0 for cell in row):
                 lines_cleared += 1
@@ -145,14 +147,14 @@ class Tetris:
                 self.grid.insert(0, [0 for _ in range(self.width)])
         return lines_cleared
 
-    def lock_piece(self, piece):
+    def lock_piece(self, piece: Tetromino) -> int:
         # előző alakzat megvizsgálása és új létrehozása
         for i, row in enumerate(piece.shape[piece.rotation % len(piece.shape)]):
             for j, cell in enumerate(row):
                 if cell == 'O':
                     self.grid[piece.y + i][piece.x + j] = piece.color
         # sorok törlése
-        lines_cleared = self.clear_lines()
+        lines_cleared: int = self.clear_lines()
         self.score += lines_cleared * 100  # pont növelése
         # új alakzat létrehozása
         self.current_piece = self.new_piece()
@@ -161,7 +163,7 @@ class Tetris:
             self.game_over = True
         return lines_cleared
 
-    def update(self):
+    def update(self) -> None:
         # mozgás
         if not self.game_over:
             if self.valid_move(self.current_piece, 0, 1, 0):
@@ -169,7 +171,7 @@ class Tetris:
             else:
                 self.lock_piece(self.current_piece)
 
-    def draw(self, screen):
+    def draw(self, screen: pygame.Surface) -> None:
         # rajzolás
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
@@ -187,30 +189,30 @@ class Tetris:
                             GRID_SIZE - 1))
 
 
-def draw_score(screen, score, x, y):
+def draw_score(screen: pygame.Surface, score: int, x: int, y: int) -> None:
     # pontszám
-    font = pygame.font.Font(None, 36)
-    text = font.render(f"Score: {score}", True, WHITE)
+    font: pygame.font.Font = pygame.font.Font(None, 36)
+    text: pygame.Surface = font.render(f"Score: {score}", True, WHITE)
     screen.blit(text, (x, y))
 
 
-def draw_game_over(screen, x, y):
+def draw_game_over(screen: pygame.Surface, x: int, y: int) -> None:
     # game over felirat
-    font = pygame.font.Font(None, 48)
-    text = font.render("Game Over", True, RED)
+    font: pygame.font.Font = pygame.font.Font(None, 48)
+    text: pygame.Surface = font.render("Game Over", True, RED)
     screen.blit(text, (x, y))
 
 
-def main():
+def main() -> None:
     # játék létrehozása
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen: pygame.Surface = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption('Tetris')
     # clock objektum létrehozása
-    clock = pygame.time.Clock()
+    clock: pygame.time.Clock = pygame.time.Clock()
     # tetris objektum létrehozása
-    game = Tetris(WIDTH // GRID_SIZE, HEIGHT // GRID_SIZE)
-    fall_time = 0
-    fall_speed = 90  # zuhanási sebesség
+    game: Tetris = Tetris(WIDTH // GRID_SIZE, HEIGHT // GRID_SIZE)
+    fall_time: int = 0
+    fall_speed: int = 90  # zuhanási sebesség
     while True:
         # képernyőszín
         screen.fill(BLACK)
@@ -238,8 +240,9 @@ def main():
                         game.current_piece.y += 1
                     game.lock_piece(game.current_piece)  # ne tudjon egy idő után forogni
         # zuhanási idő visszaadása
-        delta_time = clock.get_rawtime()
+        delta_time: int = clock.get_rawtime()
         fall_time += delta_time
+
         if fall_time >= fall_speed:
             # Ne mozogjon az alakzat
             game.update()
