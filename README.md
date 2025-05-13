@@ -1,6 +1,6 @@
 # Game Collection
 
-Ez a repository különböző egyszerű játékok forráskódját tartalmazza, amelyek Python nyelven íródtak. A projektek különböző típusú játékokat tartalmaznak, mint például klasszikus puzzle játékok, akciójátékok, és egyszerű szórakoztató programok.
+Ez a repository különböző egyszerű játékok forráskódját, illetve gépi tanulási projektjeim tartalmazza, amelyek Python nyelven íródtak. A projektek különböző típusú játékokat tartalmaznak, mint például klasszikus puzzle játékok, akciójátékok, és egyszerű szórakoztató programok.
 
 ## Tartalom
 
