@@ -3,7 +3,7 @@ import math
 import pygame
 import sys
 from karakterekFeliratok import Player, FireBall, JumpingEnemy, Spike, Bombs, display_fps, hp, win_or_lose
-
+from lvl3 import lvl3
 
 def lvl2() -> None:
     # Pygame inicializálása
@@ -202,7 +202,7 @@ def lvl2() -> None:
         clock.tick(60)
 
     if succesfull:
-        win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "You Win")
+        lvl3()
     else:
         win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "You Lose")
     # Pygame bezárása

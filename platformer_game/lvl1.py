@@ -196,3 +196,4 @@ def lvl1() -> None:
     # Pygame bezárása
     pygame.quit()
     sys.exit()
+
