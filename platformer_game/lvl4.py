@@ -1,27 +1,21 @@
-# lvl3.py
+# lvl4.py
 import math
 import pygame
 import sys
-from lvl4 import lvl4
-
 from typing import List, Tuple
 from karakterekFeliratok import (
     Player,
-    JumpingEnemy,
-    Spike,
-    Bombs,
-    FireBall,
     display_fps,
     hp,
     win_or_lose,
-    Peashooter,
-    Tallnut
+    BossEnemy, JumpingEnemy, Tallnut, Peashooter, Spike
 )
 
 
-def lvl3() -> None:
-    """A Level 3 játék logikája és fő ciklusa."""
-    # Pygame inicializálása
+def lvl4() -> None:
+    """A Level 4 játék logikája és fő ciklusa."""
+
+    # Pygame és hangrendszer inicializálása
     pygame.init()
     pygame.mixer.init()
 
@@ -36,25 +30,28 @@ def lvl3() -> None:
     screen: pygame.Surface = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Lvl3 - Downfall Tower")
 
-    # Színek
+    # Színek definiálása
     blue: Tuple[int, int, int] = (0, 0, 255)
     gray: Tuple[int, int, int] = (100, 100, 100)
 
-    # Zászló az alsó emeleten
+    # Zászló létrehozása és pozicionálása
     flag: pygame.Surface = pygame.image.load("kepek/flag.png").convert_alpha()
     flag = pygame.transform.scale(flag, (80, 160))
     flag_rect: pygame.Rect = flag.get_rect()
     flag_rect.topleft = (30, 420)
 
-    # Szív a HP megjelenítéséhez
+    # Szív létrehozása HP kijelzéshez
     heart: pygame.Surface = pygame.image.load("kepek/heart.png").convert_alpha()
     heart = pygame.transform.scale(heart, (40, 40))
     hp_rect: pygame.Rect = heart.get_rect()
     hp_rect.topleft = (15, 420)
 
-    # Játékos létrehozása
+    # Játékos létrehozása és kezdő élet
     player: Player = Player(0, 50, 50, 50)
     lives: int = 100
+
+    # Főboss létrehozása, mozgástartomány beállítása
+    boss = BossEnemy(100, 400, 580)  # x_left=100, x_right=400, y=580
 
     # Platformok definiálása emeletek szerint
     platforms: List[pygame.Rect] = [
@@ -64,47 +61,33 @@ def lvl3() -> None:
         pygame.Rect(50, 580, 800, 20),  # 4. emelet (alsó)
     ]
 
-    # Mozgó tüskék létrehozása
-    spikes: List[Spike] = [
-        Spike(150, 75, 25, 25, 100, 350, 5),
-        Spike(500, 75, 25, 25, 400, 600, 5),
-        Spike(250, 75, 25, 25, 600, 750, 5),
-    ]
-
-    # Bombák létrehozása
-    bombs: List[Bombs] = [
-        Bombs(150, 0, 25, 25),
-        Bombs(550, 0, 25, 25),
-        Bombs(350, 0, 25, 25),
-    ]
-
     # Ugráló ellenfelek létrehozása
     enemies: List[JumpingEnemy] = [
-        JumpingEnemy(100, 280, 30, 30),
-        JumpingEnemy(250, 280, 30, 30),
-        JumpingEnemy(400, 280, 30, 30),
-        JumpingEnemy(550, 280, 30, 30),
-        JumpingEnemy(700, 280, 30, 30),
+        JumpingEnemy(100, 80, 30, 30),
+        JumpingEnemy(250, 0, 30, 30),
+        JumpingEnemy(400, 100, 30, 30),
+        JumpingEnemy(550, -30, 30, 30),
+        JumpingEnemy(700, 70, 30, 30),
     ]
 
-    # Forgó tűzgolyók létrehozása
-    fireballs: List[FireBall] = [
-        FireBall(25, 25, (100, 180), 50, 0.1, math.radians(0)),
-        FireBall(25, 25, (300, 180), 50, 0.08, math.radians(190)),
-        FireBall(25, 25, (500, 180), 50, 0.12, math.radians(65)),
-        FireBall(25, 25, (700, 180), 50, 0.09, math.radians(250)),
-    ]
-
-    # Peashooterek létrehozása
-    peashooters: List[Peashooter] = [
-        Peashooter(100, 535, 50, 50, bullet_speed=7),
-    ]
-
-    # Tallnutok létrehozása
+    # Tallnutok létrehozása a pályára
     tallnuts: List[Tallnut] = [
-        Tallnut(250, 535, 50, 50),
-        Tallnut(550, 535, 50, 50),
-        Tallnut(400, 535, 50, 50)
+        Tallnut(650, 210, 42, 42),
+        Tallnut(500, 210, 42, 42),
+        Tallnut(350, 210, 42, 42),
+        Tallnut(200, 210, 42, 42),
+    ]
+
+    # Peashooterek létrehozása (upside_down paraméterrel a fejjel lefelé változathoz)
+    peashooters: List[Peashooter] = [
+        Peashooter(0, 120, 50, 50, bullet_speed=7, upside_down=True),
+    ]
+
+    # Mozgó tüskék létrehozása
+    spikes: List[Spike] = [
+        Spike(216, 380, 25, 25, 100, 750, 5),
+        Spike(432, 380, 25, 25, 100, 750, 5),
+        Spike(648, 380, 25, 25, 100, 750, 5),
     ]
 
     # Betűtípus és óra inicializálása
@@ -115,60 +98,54 @@ def lvl3() -> None:
 
     # Fő játékciklus
     while run:
-        # Események kezelése
+        # Események kezelése (kilépés és Q gomb)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                 run = False
 
-        # Játékos mozgása és gravitáció alkalmazása
+        # Játékos mozgása és gravitáció
         keys: pygame.key.ScancodeWrapper = pygame.key.get_pressed()
         player.move(keys, screen_width)
         player.apply_gravity()
         player.check_collision(platforms)
 
-        # Képernyő törlése
+        # Képernyő törlése minden frame előtt
         screen.fill((135, 206, 235))
 
         # Platformok kirajzolása
         for p in platforms:
             pygame.draw.rect(screen, gray, p)
 
-        # Tüskék frissítése és ütközés
-        for s in spikes:
-            s.draw(screen)
-            s.update()
-            if player.rect.colliderect(s):
-                player = Player(0, 50, 50, 50)
-                lives -= 1
-                punch.play()
+        # Főboss frissítése és kirajzolása
+        boss.update()
+        boss.draw(screen)
 
-        # Bombák kirajzolása és ütközés
-        for b in bombs:
-            b.draw(screen)
-            if b.rect.colliderect(player):
-                player = Player(0, 50, 50, 50)
-                lives -= 1
-                explosions.play()
+        # Lövedékek ütközésének kezelése, élet csökkentése, de a játék nem ér véget
+        for fb in boss.fireballs:
+            if fb.rect.colliderect(player.rect):
+                fb.kill()  # Lövedék eltávolítása
+                lives -= 1  # Élet csökkentése
+                player: Player = Player(0, 50, 50, 50)  # Visszaállítás kezdőpozícióra
+                burning.play()
 
-        # Ugráló ellenfelek mozgása és ütközés
+        # Ugráló ellenfelek frissítése és ütközés
         for e in enemies:
             e.draw(screen)
-            e.move(260, 380)
+            e.move(-80, 80)
             if player.rect.colliderect(e):
                 player = Player(0, 50, 50, 50)
                 lives -= 1
-                punch.play()
+                punch.play()  # Hang lejátszása
 
-        # Forgó tűzgolyók mozgatása és ütközés
-        for f in fireballs:
-            f.draw(screen)
-            f.update()
-            if f.collides_with(player):
+        # Tallnutok frissítése és ütközés
+        for tn in tallnuts:
+            tn.draw(screen)
+            if tn.check_collision(player):
                 player = Player(0, 50, 50, 50)
                 lives -= 1
-                burning.play()
+                punch.play()
 
         # Peashooterek frissítése és ütközés
         for ps in peashooters:
@@ -179,10 +156,11 @@ def lvl3() -> None:
                 lives -= 1
                 punch.play()
 
-        # Tallnutok rajzolása és ütközés
-        for tn in tallnuts:
-            tn.draw(screen)
-            if tn.check_collision(player):
+        # Tüskék frissítése és ütközés
+        for s in spikes:
+            s.draw(screen)
+            s.update()
+            if player.rect.colliderect(s):
                 player = Player(0, 50, 50, 50)
                 lives -= 1
                 punch.play()
@@ -194,7 +172,12 @@ def lvl3() -> None:
         screen.blit(flag, flag_rect)
         if player.rect.colliderect(flag_rect):
             succesfull = True
-            run = False
+            run = False  # Sikeres pálya teljesítés
+
+        # Ha a boss hozzáér a játékoshoz
+        if boss.rect.colliderect(player):
+            lives -= 1
+            player: Player = Player(0, 50, 50, 50)  # Visszaállítás kezdőpozícióra
 
         # HP megjelenítése
         screen.blit(heart, hp_rect)
@@ -207,13 +190,13 @@ def lvl3() -> None:
         pygame.display.flip()
         clock.tick(60)
 
-        # Ha az élet elfogyott, kilépés
+        # Ha az élet elfogyott, kilép a fő ciklusból
         if lives <= 0:
             run = False
 
-    # Eredmény megjelenítése
+    # Eredmény megjelenítése a játék végén
     if succesfull:
-        lvl4()
+        win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "YOU WIN!")
     else:
         win_or_lose(screen_width, screen_height, screen, (255, 255, 255), "YOU LOSE!")
 

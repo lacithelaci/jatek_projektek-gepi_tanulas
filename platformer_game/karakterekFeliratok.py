@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from typing import Tuple
 
 # Pygame hangrendszer inicializálása
@@ -10,13 +11,25 @@ jump_sound = pygame.mixer.Sound('hangok/jump.mp3')  # ugrás hangja
 # Játék vége üzenet megjelenítése
 def win_or_lose(screen_width: int, screen_height: int, screen: pygame.Surface, szin: Tuple[int, int, int],
                 uzenet: str) -> None:
-    font = pygame.font.Font(None, 170)  # nagy betűméret
-    text = font.render(f"{uzenet}", True, (0, 0, 0))  # fekete szöveg
-    text_rect = text.get_rect(center=(screen_width // 2, screen_height // 2))  # középre igazítás
-    screen.fill(szin)  # háttérszín
-    screen.blit(text, text_rect)  # szöveg kirajzolása
+    # Háttérszín kitöltése
+    screen.fill(szin)
+
+    # Kép betöltése az üzenet alapján
+    if uzenet.upper() == "YOU WIN!":
+        image_path = "kepek/win.jpg"
+    else:
+        image_path = "kepek/lose.jpg"
+
+    # Kép betöltése és átméretezése a képernyőhöz
+    img = pygame.image.load(image_path).convert_alpha()
+    img = pygame.transform.scale(img, (screen_width, screen_height))
+
+    # Kép kirajzolása
+    screen.blit(img, (0, 0))
     pygame.display.flip()  # frissítés
-    pygame.time.wait(3000)  # 3 másodperc várakozás
+
+    # 3 másodperc várakozás
+    pygame.time.wait(3000)
 
 
 # HP megjelenítése
@@ -214,34 +227,36 @@ class Spike(pygame.sprite.Sprite):
 
 # Peashooter osztály
 class Peashooter:
-    def __init__(self, x: int, y: int, width: int, height: int, bullet_speed: int = 3, spacing: int = 15):
+    def __init__(self, x: int, y: int, width: int, height: int, bullet_speed: int = 3, spacing: int = 15,
+                 upside_down: bool = False):
         self.rect = pygame.Rect(x, y, width, height)
-        self.image = pygame.image.load('kepek/peashooter.png').convert_alpha()
-        self.image = pygame.transform.scale(self.image, (width, height))
-        self.bullet_speed = bullet_speed  # borsó sebessége
-        self.spacing = spacing  # borsók közötti vízszintes távolság
+        self.original_image = pygame.image.load('kepek/peashooter.png').convert_alpha()
+        self.original_image = pygame.transform.scale(self.original_image, (width, height))
 
-        # 4 borsó egymás után
+        # Ha fejjel lefelé, tükrözzük függőlegesen
+        self.image = self.original_image
+        if upside_down:
+            self.image = pygame.transform.flip(self.original_image, False, True)
+
+        self.bullet_speed = bullet_speed
+        self.spacing = spacing
         self.bullets = [
             pygame.Rect(x + width + i * spacing, y + height // 2 - 5, 10, 10) for i in range(4)
         ]
 
-    # Mozgatás és újratöltés
     def update(self, screen_width: int) -> None:
         all_passed = True
         for bullet in self.bullets:
-            bullet.x += self.bullet_speed
+            bullet.x += self.bullet_speed  # lövedékek az eredeti irányban mennek
             if bullet.x <= screen_width:
                 all_passed = False
 
-        # Ha mind a 4 borsó elérte a képernyő végét, visszaállítjuk
         if all_passed:
             self.bullets = [
                 pygame.Rect(self.rect.right + i * self.spacing, self.rect.y + self.rect.height // 2 - 5, 10, 10)
                 for i in range(4)
             ]
 
-    # Kirajzolás
     def draw(self, surface: pygame.Surface) -> None:
         surface.blit(self.image, self.rect)
         for bullet in self.bullets:
@@ -271,3 +286,93 @@ class Tallnut:
     # Ütközés vizsgálata
     def check_collision(self, player: Player) -> bool:
         return self.rect.colliderect(player.rect)
+
+
+class BossEnemy(pygame.sprite.Sprite):
+    def __init__(self, x_left, x_right, y):
+        super().__init__()
+        # Sprite
+        self.image = pygame.image.load("kepek/bowser.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (50, 50))
+        self.rect = self.image.get_rect(topleft=(x_left, y))
+
+        # Mozgás
+        self.speed = random.randint(1, 3)  # véletlenszerű sebesség
+        self.direction = random.choice([-1, 1])
+        self.move_range = (x_left, x_right)
+
+        # Ugrás
+        self.gravity = 0
+        self.on_ground = True
+        self.jump_cooldown = 0
+
+        # Lövedékek
+        self.fireballs = pygame.sprite.Group()
+        self.shoot_cooldown = 0
+
+    def update(self):
+        # Mozgás a két x között
+        self.rect.x += self.speed * self.direction
+
+        # Határok ellenőrzése
+        if self.rect.left <= self.move_range[0]:
+            self.rect.left = self.move_range[0]
+            self.direction = 1
+        elif self.rect.right >= self.move_range[1]:
+            self.rect.right = self.move_range[1]
+            self.direction = -1
+
+        # Véletlenszerű irányváltás (5% esély minden frissítéskor)
+        if random.randint(0, 100) < 5:
+            self.direction *= -1
+
+        # Gravitáció
+        self.rect.y += self.gravity
+        if not self.on_ground:
+            self.gravity += 0.7
+        if self.rect.bottom >= 580:
+            self.rect.bottom = 580
+            self.on_ground = True
+            self.gravity = 0
+
+        # Véletlenszerű ugrás
+        if self.jump_cooldown > 0:
+            self.jump_cooldown -= 1
+        else:
+            if self.on_ground and random.randint(0, 100) < 2:
+                self.gravity = -12
+                self.on_ground = False
+                self.jump_cooldown = 120
+
+        # Lövés cooldown (jobb oldalra)
+        if self.shoot_cooldown > 0:
+            self.shoot_cooldown -= 1
+        else:
+            if random.randint(0, 100) < 2:
+                self.shoot_fireball()
+
+        # Lövedékek frissítése
+        self.fireballs.update()
+
+    def shoot_fireball(self):
+        fireball = Fireball(self.rect.centerx, self.rect.centery, 1)  # csak jobbra
+        self.fireballs.add(fireball)
+        self.shoot_cooldown = 90
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+        self.fireballs.draw(screen)
+
+
+class Fireball(pygame.sprite.Sprite):
+    def __init__(self, x, y, direction):
+        super().__init__()
+        self.image = pygame.Surface((20, 20), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, (255, 80, 0), (10, 10), 10)
+        self.rect = self.image.get_rect(center=(x, y))
+        self.speed = 6 * direction
+
+    def update(self):
+        self.rect.x += self.speed
+        if self.rect.right < 0 or self.rect.left > 800:
+            self.kill()
