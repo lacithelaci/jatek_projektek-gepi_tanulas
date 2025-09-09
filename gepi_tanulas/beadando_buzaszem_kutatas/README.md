@@ -13,3 +13,5 @@ A projekt során az alábbi lépéseket hajtottam végre:
 - **Klaszterezés**: DBSCAN és K-Means algoritmusok alkalmazása a búzamagok csoportosítására.
 - **Osztályozás**: Logisztikus regresszió, lineáris regresszió, Random Forest és Gradient Boosting modellek használata a búzafajták előrejelzésére.
 - **Eredmények értékelése**: Az osztályozási modellek teljesítményének kiértékelése.
+
+Az alábbi linken elérhető a webapp: https://lacithelaci.streamlit.app/
