@@ -5,161 +5,281 @@ from pygame.locals import *
 from kor import Circle
 
 
-def game() -> None:
-    # inicializálás
+SKY_TOP = (113, 197, 207)
+SKY_BOT = (160, 220, 230)
+GROUND_COLOR = (222, 184, 135)
+GRASS_COLOR = (83, 179, 77)
+PIPE_COLOR = (83, 179, 77)
+PIPE_BORDER = (55, 140, 50)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+YELLOW = (255, 220, 50)
+
+WIDTH, HEIGHT = 480, 640
+GROUND_H = 80
+PIPE_WIDTH = 70
+PIPE_GAP = 160
+PIPE_SPEED = 3
+GRAVITY = 0.5
+JUMP_FORCE = -9
+FPS = 60
+
+
+def draw_background(screen, clouds):
+    screen.fill(SKY_TOP)
+    for cx, cy in clouds:
+        pygame.draw.ellipse(screen, WHITE, (cx, cy, 80, 35))
+        pygame.draw.ellipse(screen, WHITE, (cx + 20, cy - 15, 60, 35))
+        pygame.draw.ellipse(screen, WHITE, (cx + 45, cy, 70, 30))
+
+
+def draw_ground(screen):
+    pygame.draw.rect(screen, GROUND_COLOR, (0, HEIGHT - GROUND_H, WIDTH, GROUND_H))
+    pygame.draw.rect(screen, GRASS_COLOR, (0, HEIGHT - GROUND_H, WIDTH, 18))
+
+
+def draw_pipe(screen, x, gap_y):
+    top_h = gap_y
+    bot_y = gap_y + PIPE_GAP
+    bot_h = HEIGHT - GROUND_H - bot_y
+
+    pygame.draw.rect(screen, PIPE_COLOR, (x, 0, PIPE_WIDTH, top_h - 10))
+    pygame.draw.rect(screen, PIPE_BORDER, (x - 5, top_h - 30, PIPE_WIDTH + 10, 30))
+    pygame.draw.rect(screen, PIPE_BORDER, (x - 4, top_h - 29, PIPE_WIDTH + 8, 28))
+    pygame.draw.rect(screen, PIPE_COLOR, (x + 2, top_h - 28, PIPE_WIDTH - 4, 26))
+
+    pygame.draw.rect(screen, PIPE_COLOR, (x, bot_y + 10, PIPE_WIDTH, bot_h))
+    pygame.draw.rect(screen, PIPE_BORDER, (x - 5, bot_y, PIPE_WIDTH + 10, 30))
+    pygame.draw.rect(screen, PIPE_BORDER, (x - 4, bot_y + 1, PIPE_WIDTH + 8, 28))
+    pygame.draw.rect(screen, PIPE_COLOR, (x + 2, bot_y + 2, PIPE_WIDTH - 4, 26))
+
+
+def game_over_screen(screen, font_big, font_small, score, best):
+    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 120))
+    screen.blit(overlay, (0, 0))
+
+    panel = pygame.Rect(WIDTH // 2 - 130, HEIGHT // 2 - 110, 260, 220)
+    pygame.draw.rect(screen, (255, 240, 180), panel, border_radius=16)
+    pygame.draw.rect(screen, (200, 160, 60), panel, 3, border_radius=16)
+
+    go_text = font_big.render("Game Over", True, (180, 60, 30))
+    screen.blit(go_text, go_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 70)))
+
+    sc_text = font_small.render(f"Pontszám: {score}", True, BLACK)
+    screen.blit(sc_text, sc_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 20)))
+
+    best_text = font_small.render(f"Legjobb: {best}", True, (80, 80, 80))
+    screen.blit(best_text, best_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20)))
+
+    btn = pygame.Rect(WIDTH // 2 - 80, HEIGHT // 2 + 60, 160, 45)
+    pygame.draw.rect(screen, GRASS_COLOR, btn, border_radius=10)
+    pygame.draw.rect(screen, (40, 120, 40), btn, 2, border_radius=10)
+    btn_text = font_small.render("Újra (SPACE)", True, WHITE)
+    screen.blit(btn_text, btn_text.get_rect(center=btn.center))
+
+    return btn
+
+
+def game(best_score=0):
     pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Flappy Bird")
+    clock = pygame.time.Clock()
 
-    # képkockák
-    fps = 60
-    fpsClock = pygame.time.Clock()
+    font_big = pygame.font.Font(None, 52)
+    font_mid = pygame.font.Font(None, 42)
+    font_small = pygame.font.Font(None, 32)
 
-    # képernyő és futás
-    width, height = 800, 600
-    screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Flappy bird")
-    run = True
+    bird = Circle(100, HEIGHT // 2, 20, (255, 160, 30), GRAVITY)
 
-    # színek
-    BLACK = (0, 0, 0)
-    RED = (255, 0, 0)
-    GREEN = (34, 139, 34)
-    WHITE = (255, 255, 255)
+    pipes = []
+    pipe_timer = 0
+    PIPE_INTERVAL = 90
+    pipe_id_counter = 0
 
-    # koordináták
-    labda_x, labda_y = 20, 300
-    teglalap1_x, teglalap1_y = 760, 300
-    teglalap1_szelesseg, teglalap1_magassag = 40, 800
+    clouds = [(random.randint(0, WIDTH - 80), random.randint(20, 150)) for _ in range(4)]
+    cloud_speed = 0.1
 
-    teglalap2_x, teglalap2_y = 760, -125
-    teglalap2_szelesseg, teglalap2_magassag = 40, 300
+    score = 0
+    best = best_score
+    started = False
+    alive = True
+    passed_pipes = set()
 
-    # betű betöltése pontszámláló és szöveg előkészítése
-    pontszam = 0
-    betu = pygame.font.Font(None, 36)
+    while True:
+        clock.tick(FPS)
 
-    # Game loop.
-    while run:
-        screen.fill(BLACK)
         for event in pygame.event.get():
             if event.type == QUIT:
-                run = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:
-                    run = False
-                if event.key == pygame.K_SPACE:
-                    labda_y -= 40
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key == K_q:
+                    pygame.quit()
+                    sys.exit()
+                if event.key == K_SPACE:
+                    if alive:
+                        bird.jump(JUMP_FORCE)
+                        started = True
+                    else:
+                        return score
+            if event.type == MOUSEBUTTONDOWN:
+                if alive:
+                    bird.jump(JUMP_FORCE)
+                    started = True
 
-        # érintő objektumok létrehozása
-        teglalap1 = pygame.Rect(teglalap1_x, teglalap1_y, teglalap1_szelesseg, teglalap1_magassag)
-        teglalap2 = pygame.Rect(teglalap2_x, teglalap2_y, teglalap2_szelesseg, teglalap2_magassag)
-        kor = Circle(labda_x, labda_y, 20, RED, 2)
+        if started and alive:
+            bird.update(GRAVITY)
 
-        # pontszám és megjelenítés
-        text = betu.render(f'Pontszám: {pontszam}', True, WHITE)
+            pipe_timer += 1
+            if pipe_timer >= PIPE_INTERVAL:
+                gap_y = random.randint(120, HEIGHT - GROUND_H - PIPE_GAP - 60)
+                pipes.append([WIDTH, gap_y, pipe_id_counter])
+                pipe_id_counter += 1
+                pipe_timer = 0
 
-        # adatok frissítése
-        teglalap1_x -= 5
-        teglalap2_x -= 5
-        labda_y += 2
+            for p in pipes:
+                p[0] -= PIPE_SPEED
 
-        # ütközés
-        if kor.collides_with_rect(teglalap1):
-            run = False
-        if kor.collides_with_rect(teglalap2):
-            run = False
+            pipes = [p for p in pipes if p[0] > -PIPE_WIDTH - 10]
 
-        # csövek mozgása
-        if teglalap1_x < -40:
-            teglalap1_x = width - teglalap1_szelesseg
-            teglalap1_y = random.randint(300, 400)
-        if teglalap2_x < -40:
-            teglalap2_x = width - teglalap2_szelesseg
-            teglalap2_y = random.randint(-150, -100)
-        if labda_x + 40 == teglalap2_x:
-            pontszam += 1
-        if labda_y < 0 or labda_y > 800:
-            run = False
 
-        # alakzatok kirajzolása
-        pygame.draw.rect(screen, GREEN, teglalap1)
-        pygame.draw.rect(screen, GREEN, teglalap2)
-        # szöveg kirajzolása
-        kor.draw(screen)
-        screen.blit(text, (300, 30))
+            clouds = [((cx - cloud_speed) % (WIDTH + 80) - 80, cy) for cx, cy in clouds]
+
+            for px, gap_y, pid in pipes:
+                top_rect = pygame.Rect(px - 5, 0, PIPE_WIDTH + 10, gap_y - 10)
+                bot_rect = pygame.Rect(px - 5, gap_y + PIPE_GAP + 10, PIPE_WIDTH + 10,
+                                       HEIGHT - GROUND_H - gap_y - PIPE_GAP - 10)
+                if bird.collides_with_rect(top_rect) or bird.collides_with_rect(bot_rect):
+                    alive = False
+
+                if pid not in passed_pipes and px + PIPE_WIDTH < bird.x:
+                    score += 1
+                    if score > best:
+                        best = score
+                    passed_pipes.add(pid)
+
+            if bird.y - bird.sugar < 0:
+                bird.y = bird.sugar
+                bird.velocity = 0
+            if bird.y + bird.sugar >= HEIGHT - GROUND_H:
+                alive = False
+
+        draw_background(screen, clouds)
+
+        for px, gap_y, _ in pipes:
+            draw_pipe(screen, px, gap_y)
+
+        draw_ground(screen)
+        bird.draw(screen)
+
+        if not started:
+            hint = font_small.render("Nyomj SPACE-t az indításhoz!", True, WHITE)
+            shadow = font_small.render("Nyomj SPACE-t az indításhoz!", True, BLACK)
+            screen.blit(shadow, hint.get_rect(center=(WIDTH // 2 + 1, HEIGHT // 3 + 1)))
+            screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT // 3)))
+
+        score_text = font_mid.render(str(score), True, WHITE)
+        score_shadow = font_mid.render(str(score), True, BLACK)
+        screen.blit(score_shadow, score_text.get_rect(center=(WIDTH // 2 + 2, 52)))
+        screen.blit(score_text, score_text.get_rect(center=(WIDTH // 2, 50)))
+
+        if not alive:
+            btn = game_over_screen(screen, font_big, font_small, score, best)
+
         pygame.display.flip()
-        fpsClock.tick(fps)
 
-    menu()
-    pygame.quit()
-    sys.exit()
+        if not alive:
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    if event.type == KEYDOWN and event.key == K_SPACE:
+                        waiting = False
+                    if event.type == MOUSEBUTTONDOWN:
+                        if btn.collidepoint(event.pos):
+                            waiting = False
+            return score
 
 
-def menu() -> None:
-    # Pygame inicializálása
+def menu():
     pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Flappy Bird")
+    clock = pygame.time.Clock()
 
-    # Ablak mérete
-    width, height = 800, 600
-    screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Menü")
+    font_title = pygame.font.Font(None, 80)
+    font_btn = pygame.font.Font(None, 42)
+    font_small = pygame.font.Font(None, 28)
 
-    # Színek
-    BLACK = (0, 0, 0)
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
+    clouds = [(random.randint(0, WIDTH - 80), random.randint(20, 150)) for _ in range(4)]
+    best = 0
 
-    # Betűtípus beállítása
-    font = pygame.font.Font(None, 74)
+    while True:
+        clock.tick(FPS)
+        clouds = [((cx - 0.4) % (WIDTH + 80) - 80, cy) for cx, cy in clouds]
 
-    # Gomb tulajdonságai
-    button_width = 200
-    button_height = 100
-    button_color = GREEN
-    button_x = (width - button_width) // 2
-    button_y = (height - button_height) // 2
-
-    # Fő ciklus változó
-    running = True
-    in_menu = True
-
-    # Függvény a gomb megjelenítéséhez
-    def draw_button(screen, text, x, y, width, height, color):
-        pygame.draw.rect(screen, color, (x, y, width, height))
-        text_surface = font.render(text, True, BLACK)
-        text_rect = text_surface.get_rect(center=(x + width // 2, y + height // 2))
-        screen.blit(text_surface, text_rect)
-
-    # Menü ciklus
-    while running:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key == K_q:
+                    pygame.quit()
+                    sys.exit()
+                if event.key == K_SPACE:
+                    result = game(best)
+                    if result > best:
+                        best = result
+            if event.type == MOUSEBUTTONDOWN:
+                mx, my = event.pos
+                start_btn = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 55)
+                quit_btn = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 95, 200, 55)
+                if start_btn.collidepoint(mx, my):
+                    result = game(best)
+                    if result > best:
+                        best = result
+                if quit_btn.collidepoint(mx, my):
+                    pygame.quit()
+                    sys.exit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_x, mouse_y = event.pos
-                if (button_x <= mouse_x <= button_x + button_width and
-                        button_y <= mouse_y <= button_y + button_height):
-                    in_menu = False
-                elif (button_x <= mouse_x <= button_x + button_width and
-                      button_y + 120 <= mouse_y <= 120 + button_y + button_height):
-                    running = False
+        draw_background(screen, clouds)
+        draw_ground(screen)
 
-        screen.fill(BLACK)
+        title = font_title.render("Flappy", True, YELLOW)
+        title2 = font_title.render("Bird", True, YELLOW)
+        t_shadow = font_title.render("Flappy", True, (180, 120, 0))
+        t2_shadow = font_title.render("Bird", True, (180, 120, 0))
+        screen.blit(t_shadow, title.get_rect(center=(WIDTH // 2 + 3, HEIGHT // 3 - 17)))
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT // 3 - 20)))
+        screen.blit(t2_shadow, title2.get_rect(center=(WIDTH // 2 + 3, HEIGHT // 3 + 53)))
+        screen.blit(title2, title2.get_rect(center=(WIDTH // 2, HEIGHT // 3 + 50)))
 
-        if in_menu:
-            draw_button(screen, "Start", button_x, button_y, button_width, button_height, button_color)
-            draw_button(screen, "Kilépés", button_x, button_y + 120, button_width, button_height, RED)
-        else:
-            game()
+        start_btn = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 55)
+        quit_btn = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 95, 200, 55)
+
+        pygame.draw.rect(screen, GRASS_COLOR, start_btn, border_radius=12)
+        pygame.draw.rect(screen, (40, 120, 40), start_btn, 2, border_radius=12)
+        st = font_btn.render("Start", True, WHITE)
+        screen.blit(st, st.get_rect(center=start_btn.center))
+
+        pygame.draw.rect(screen, (200, 70, 60), quit_btn, border_radius=12)
+        pygame.draw.rect(screen, (140, 40, 30), quit_btn, 2, border_radius=12)
+        qt = font_btn.render("Kilépés", True, WHITE)
+        screen.blit(qt, qt.get_rect(center=quit_btn.center))
+
+        if best > 0:
+            b = font_small.render(f"Legjobb: {best}", True, WHITE)
+            screen.blit(b, b.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 175)))
+
+        hint = font_small.render("vagy nyomj SPACE-t", True, (220, 220, 220))
+        screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 10)))
 
         pygame.display.flip()
-        pygame.time.Clock().tick(60)
-
-    pygame.quit()
-    sys.exit()
 
 
 if __name__ == '__main__':
-    jatekter = 'menu'
-    if jatekter == 'menu':
-        menu()
+    menu()
